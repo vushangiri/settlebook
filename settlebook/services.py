@@ -154,6 +154,10 @@ def relation(user, a, b, owner_id=None):
         .where(Relationship.left_id == left, Relationship.right_id == right, Relationship.currency == "AUD")
         .with_for_update()
     )
+    for pid in (r.left_id, r.right_id):
+        person = get(Person, pid)
+        if not person.is_self and person.phone and r.owner_id == user.id:
+            auto_invite(user, person, relationship_id=r.id)
     return r
 
 
@@ -364,6 +368,10 @@ def new_group(user, op, data):
                 accepted=ident == own_person(user).id,
             )
         )
+    db.session.flush()
+    for member in group_members(g):
+        if not member.accepted:
+            auto_invite(user, get(Person, member.person_id), member_id=member.id)
     audit(user, "group.create", g)
     return {"id": g.id, "path": "/group/" + g.id}
 
@@ -378,7 +386,10 @@ def add_member(user, op, data):
     p = selectable(user, data["person_id"])
     if db.session.scalar(select(Member.id).where(Member.group_id == g.id, Member.person_id == p.id)):
         raise Conflict("Already a member.")
-    db.session.add(Member(group_id=g.id, person_id=p.id))
+    member = Member(group_id=g.id, person_id=p.id)
+    db.session.add(member)
+    db.session.flush()
+    auto_invite(user, p, member_id=member.id)
     g.revision += 1
     audit(user, "group.member.add", g, {"person_id": p.id})
     return {"path": "/group/" + g.id}
@@ -571,13 +582,37 @@ def finalize(user, op, data):
     return {"id": snap.id, "path": "/group/" + g.id}
 
 
+def auto_invite(user, person, **scope):
+    if not person.phone:
+        return
+    if scope.get("relationship_id") and db.session.scalar(select(Access.id).where(
+        Access.relationship_id == scope["relationship_id"], Access.person_id == person.id,
+    )):
+        return
+    target = db.session.scalar(select(User).where(User.phone == person.phone, User.active.is_(True)))
+    if target and target.id == user.id:
+        return
+    return invite(user, None, {"person_id": person.id, **scope})
+
+
+def claim_invitations(user):
+    """Deliver invitations queued before this phone number registered."""
+    invitations = db.session.scalars(select(Invitation).where(
+        Invitation.target_id.is_(None), Invitation.target_phone == user.phone,
+        Invitation.status == "pending", Invitation.expires_at > now(),
+    ).with_for_update()).all()
+    for inv in invitations:
+        inv.target_id = user.id
+        notify([user.id], "Invitation to share a ledger or group.", "/invitations")
+
+
 def invite(user, op, data):
     p = selectable(user, data["person_id"])
-    target = db.session.scalar(
-        select(User).where(User.phone == p.phone, User.verified.is_(True), User.active.is_(True))
-    )
-    if not target or target.id == user.id:
-        raise ValueError("No eligible verified account. Verify the phone with the administrator first.")
+    if not p.phone:
+        raise ValueError("Add a phone number to this contact before inviting them.")
+    target = db.session.scalar(select(User).where(User.phone == p.phone, User.active.is_(True)))
+    if target and target.id == user.id:
+        raise ValueError("You cannot invite your own account.")
     rid, mid = data.get("relationship_id"), data.get("member_id")
     if bool(rid) == bool(mid):
         raise ValueError("Choose exactly one sharing scope.")
@@ -595,9 +630,17 @@ def invite(user, op, data):
             raise Forbidden()
         if m.accepted:
             raise Conflict("Membership is already accepted.")
+    existing = db.session.scalar(select(Invitation).where(
+        Invitation.sender_id == user.id, Invitation.person_id == p.id,
+        Invitation.relationship_id == rid, Invitation.member_id == mid,
+        Invitation.status == "pending", Invitation.expires_at > now(),
+    ))
+    if existing:
+        return {"id": existing.id, "path": "/invitations"}
     inv = Invitation(
         sender_id=user.id,
-        target_id=target.id,
+        target_id=target.id if target else None,
+        target_phone=p.phone,
         person_id=p.id,
         relationship_id=rid,
         member_id=mid,
@@ -607,7 +650,7 @@ def invite(user, op, data):
     db.session.flush()
     audit(user, "invitation.create", inv)
     notify(
-        [target.id], "Invitation to share a ledger or group. Acceptance reveals its existing history.", "/invitations"
+        [target.id] if target else [], "Invitation to share a ledger or group. Acceptance reveals its existing history.", "/invitations"
     )
     return {"id": inv.id, "path": "/invitations"}
 
@@ -618,8 +661,6 @@ def accept_invite(user, op, data):
         raise Forbidden()
     if inv.status != "pending" or inv.expires_at < now():
         raise Conflict("Invitation has expired or was already answered.")
-    if not user.verified:
-        raise Forbidden("Phone verification is required before accepting.")
     inv.status = "accepted" if data.get("accept") == "yes" else "declined"
     if inv.status == "accepted":
         if inv.relationship_id:

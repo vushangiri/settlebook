@@ -163,7 +163,8 @@ class Transfer(Base):
 
 class Invitation(Base):
     sender_id = fk("user", nullable=False)
-    target_id = fk("user", nullable=False, index=True)
+    target_id = fk("user", index=True)
+    target_phone = db.Column(db.String(20), index=True)
     relationship_id = fk("relationship")
     member_id = fk("member")
     person_id = fk("person", nullable=False)

@@ -215,6 +215,7 @@ def register():
         db.session.add(u)
         db.session.flush()
         db.session.add(Person(owner_id=u.id, name=name, phone=u.phone, email=u.email, is_self=True))
+        s.claim_invitations(u)
         s.audit(u, "account.register", u)
         if request.files.get("file") and request.files["file"].filename:
             u.avatar_id = store_upload(u, images_only=True).id

@@ -6,7 +6,7 @@
 - Flask-WTF CSRF on POST, including JSON `X-CSRFToken`; SameSite=Lax and HttpOnly cookies; Secure in production; seven-day session maximum.
 - Atomic PostgreSQL authentication/reset rate buckets. The trusted proxy setting is enabled only in the supplied internal Nginx topology; Nginx overwrites forwarded IP headers. Do not expose the app's port or enable proxy trust behind arbitrary clients.
 - Explicit relationship/group authorization on reads, writes, attachments, search, sharing, and review targets. Knowing a UUID or a phone number grants no financial access.
-- Independent phone verification plus scoped invitation acceptance. One endpoint cannot be reassigned to a second accepted account. Existing private history is disclosed only by explicit invitation and acceptance.
+- Phone-based invitations with scoped acceptance; phone verification is optional. One endpoint cannot be reassigned to a second accepted account. Existing private history is disclosed only by explicit invitation and acceptance.
 - Expiring 30-minute single-use password reset tokens stored only as SHA-256 digests; SMTP TLS supported. Reset links use configured PUBLIC_URL, not an attacker-supplied Host header.
 - Immutable financial records at ORM and database levels; transaction locks, unique idempotency keys, request/attachment fingerprints, source references and audit records.
 - Upload cap 8 MiB; randomized filenames; supported image decoding/re-encoding to WebP; decompression pixel limit; PDF header/EOF checks; private delivery and authorization. PDFs download as attachments with restrictive sandbox CSP rather than executing inline. The application is not an antivirus scanner; PDF content safety is not guaranteed.

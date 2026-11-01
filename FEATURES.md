@@ -7,7 +7,7 @@
 | Original minimal stack | Flask/PostgreSQL/SQLAlchemy/Jinja/HTMX/Alpine, compiled Tailwind, Gunicorn/Nginx/Compose | Imports, assets, migrations SQL checked; deployment blocked |
 | Visual identity | Prototype CSS/tokens, purple gradient, dark/light themes, mobile shell, fixed bottom nav, safe-area, reduced-motion | 16 rendered templates; both-theme screenshots; physical device checks pending |
 | Accounts | Registration, E.164 phone, unique optional email, secure password, sessions, profile/photo, reset/change, deactivation | Public forms/CSRF checked; PostgreSQL account tests blocked; SMTP delivery pending |
-| Contacts/sharing | Private contacts with optional phone/email/photo/notes; verified-account invitations, explicit acceptance, later-registration linking | Multi-user integration and alias-reuse tests supplied, blocked |
+| Contacts/sharing | Private contacts with optional phone/email/photo/notes; automatic phone-based invitations for unverified accounts, explicit acceptance, queued invitations for later registration | Multi-user integration and alias-reuse tests supplied, blocked |
 | Individual ledger | Money given/taken, repayments, splits/groups, adjustments/reversals, receipts, effective date, actor/source/reference metadata | Pure arithmetic checked; persistence/authorization tests blocked |
 | Immutable history | ORM guards, PostgreSQL triggers, reversal source refs, audit | DDL generated; trigger test blocked |
 | Reviews/disputes | Acknowledge/dispute/resolve, notes, history, finalization blocking | PostgreSQL tests supplied, blocked |

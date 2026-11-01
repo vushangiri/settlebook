@@ -135,7 +135,7 @@ def test_shared_opposite_perspective_and_idor(pgapp):
         assert s.balance(r, ids["me"]) == -s.balance(r, ids["a"]) == 10000
     assert b.get("/relationship/" + ids["r"]).status_code == 200
     assert call(z, "entry", entry_data(ids)).status_code == 403
-    assert b"Dinner" not in z.get("/search?q=Dinner").data
+    assert ("/relationship/" + ids["r"]).encode() not in z.get("/search?q=Dinner").data
 
 
 def test_split_third_party_and_atomic_invalid(pgapp):
@@ -414,6 +414,9 @@ def test_failed_financial_transaction_rolls_back_everything(pgapp, monkeypatch):
     def fail(*args, **kwargs):
         raise RuntimeError("Injected after ledger flush")
 
+    with pgapp.app_context():
+        from settlebook.models import Audit
+        initial_audits = db.session.scalar(select(func.count()).select_from(Audit))
     monkeypatch.setattr(s, "notify", fail)
     assert call(c, "entry", entry_data(ids), "rollback-key-0001").status_code == 500
     with pgapp.app_context():
@@ -421,7 +424,7 @@ def test_failed_financial_transaction_rolls_back_everything(pgapp, monkeypatch):
 
         assert db.session.scalar(select(func.count()).select_from(Ledger)) == 0
         assert db.session.scalar(select(func.count()).select_from(Operation)) == 0
-        assert db.session.scalar(select(func.count()).select_from(Audit)) == 0
+        assert db.session.scalar(select(func.count()).select_from(Audit)) == initial_audits
 
 
 def test_full_repayment_and_stale_finalization(pgapp):
@@ -437,7 +440,7 @@ def test_full_repayment_and_stale_finalization(pgapp):
     assert call(c, "finalize", {"group_id": g, "revision": 0, "confirm": "yes"}).status_code == 409
 
 
-def test_rate_limiting_and_unverified_link_denial(pgapp):
+def test_rate_limiting_and_unverified_sharing(pgapp):
     ids = seed(pgapp)
     a = client(pgapp, ids["u"])
     b = client(pgapp, ids["v"])
@@ -445,7 +448,7 @@ def test_rate_limiting_and_unverified_link_denial(pgapp):
     with pgapp.app_context():
         db.session.get(User, ids["v"]).verified = False
         db.session.commit()
-    assert call(b, "accept", {"invitation_id": inv.json["id"], "accept": "yes"}).status_code == 403
+    assert call(b, "accept", {"invitation_id": inv.json["id"], "accept": "yes"}).status_code == 200
     c = pgapp.test_client()
     for _ in range(15):
         assert c.post("/login", data={"phone": "+61400111222", "password": "wrong"}).status_code == 400
@@ -470,3 +473,38 @@ def test_opposite_users_concurrent_repayments(pgapp):
     assert sorted(results) == [200, 400]
     with pgapp.app_context():
         assert s.balance(db.session.get(Relationship, ids["r"]), ids["me"]) == 3000
+
+
+def test_automatic_group_invitations_and_shared_updates(pgapp):
+    from settlebook.models import Invitation, Member
+    ids = seed(pgapp)
+    a, b = client(pgapp, ids["u"]), client(pgapp, ids["v"])
+    with pgapp.app_context():
+        db.session.get(User, ids["v"]).verified = False
+        db.session.commit()
+    gid = new_group(a, ids)
+    with pgapp.app_context():
+        member = db.session.scalar(select(Member).where(Member.group_id == gid, Member.person_id == ids["a"]))
+        inv = db.session.scalar(select(Invitation).where(Invitation.member_id == member.id))
+        invitation_id = inv.id
+    assert b.get("/group/" + gid).status_code == 403
+    assert call(b, "accept", {"invitation_id": invitation_id, "accept": "yes"}).status_code == 200
+    eid = expense(a, ids, gid)
+    assert eid.encode() in b.get("/group/" + gid).data
+
+
+def test_automatic_ledger_invitation_waits_for_registration(pgapp):
+    from settlebook.models import Invitation
+    ids = seed(pgapp)
+    a = client(pgapp, ids["u"])
+    response = a.post("/people", data={"name": "Future user", "phone": "+61400999888"})
+    assert response.status_code == 302
+    with pgapp.app_context():
+        inv = db.session.scalar(select(Invitation).where(Invitation.target_phone == "+61400999888"))
+        assert inv.target_id is None
+        iid = inv.id
+    b = pgapp.test_client()
+    response = b.post("/register", data={"name": "Future user", "phone": "+61400999888", "password": "secure-password"})
+    assert response.status_code == 302
+    assert b"Ledger invitation" in b.get("/invitations").data
+    assert call(b, "accept", {"invitation_id": iid, "accept": "yes"}).status_code == 200

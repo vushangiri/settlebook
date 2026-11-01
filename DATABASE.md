@@ -16,7 +16,7 @@ PostgreSQL 16; SQLAlchemy 2; Alembic via Flask-Migrate. IDs are UUID strings (36
 | review | One ledger/expense/group target; acknowledgment/dispute/resolution event; unique resolution reference |
 | snapshot | One immutable finalized group snapshot, including net, contributions, shares and transfers |
 | transfer | Finalized snapshot debtor/creditor/cents; unique generated ledger reference |
-| invitation | Sender, verified target, scoped relationship or membership, expiry, acceptance status |
+| invitation | Sender, optional registered target, target phone, scoped relationship or membership, expiry, acceptance status |
 | attachment | Private randomized stored filename, MIME, length and owner |
 | notification | In-app event recipient, message, deep link, read state |
 | audit | Append-only actor/action/target/data record |
