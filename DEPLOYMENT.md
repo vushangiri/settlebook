@@ -4,6 +4,25 @@
 
 Use README instructions. Database startup and migrations precede app traffic. Compiled CSS and vendored JavaScript are included, so Docker does not need a Node build step. Database and uploads use separate persistent named volumes. Restarting/rebuilding containers preserves both. Never use `docker compose down -v` on a deployment containing valuable records.
 
+## Temporary HTTP deployment
+
+Set these values in the VPS `.env`, using the address you open in your browser:
+
+```dotenv
+PUBLIC_URL=http://your-server-address
+COOKIE_SECURE=false
+```
+
+The production override honors `COOKIE_SECURE` and defaults to `true` when it is unset. Secure cookies are not sent by browsers over HTTP on a VPS, which causes CSRF session token errors. Keep CSRF protection enabled.
+
+After copying updated source and configuration to the VPS, rebuild and recreate the app and proxy:
+
+```bash
+docker compose -f compose.yaml -f compose.production.yaml up -d --build --force-recreate app nginx
+```
+
+Clear the site's browser cookies and reload the registration page before submitting again. When enabling HTTPS, set `PUBLIC_URL=https://your-domain` and `COOKIE_SECURE=true`, then recreate the containers again. HTTP transmits passwords and session cookies without encryption.
+
 ## Ubuntu VPS with HTTPS
 
 1. Configure DNS for your domain and install Docker Engine, Compose, host Nginx and Certbot through your normal supported Ubuntu repositories.

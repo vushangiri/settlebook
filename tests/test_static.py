@@ -59,6 +59,36 @@ def test_csrf_without_database(app):
     assert app.test_client().post("/register", data={"name": "No CSRF"}).status_code == 400
 
 
+@pytest.mark.parametrize("length", [5, 6, 200, 201])
+def test_password_length(length):
+    from settlebook.routes import password
+    from werkzeug.security import check_password_hash
+
+    value = "x" * length
+    if 6 <= length <= 200:
+        assert check_password_hash(password(value), value)
+    else:
+        with pytest.raises(ValueError, match="6–200"):
+            password(value)
+
+
+def test_registration_post_over_http(app, monkeypatch):
+    import re
+    from settlebook import routes
+
+    app.config["WTF_CSRF_ENABLED"] = True
+    monkeypatch.setattr(routes, "limited", lambda scope: None)
+    client = app.test_client()
+    response = client.get("/register", base_url="http://vps.example")
+    assert "; Secure" not in response.headers["Set-Cookie"]
+    token = re.search(rb'name="csrf_token" value="([^"]+)"', response.data).group(1).decode()
+    response = client.post(
+        "/register", base_url="http://vps.example", data={"csrf_token": token, "name": ""}
+    )
+    assert response.status_code == 400
+    assert b"A name of up to 120 characters is required." in response.data
+
+
 def test_csrf_token_lifetime(app, monkeypatch):
     from flask_wtf.csrf import generate_csrf, validate_csrf
     from wtforms.validators import ValidationError

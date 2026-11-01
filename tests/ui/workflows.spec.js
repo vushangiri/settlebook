@@ -6,7 +6,7 @@ async function register(page){
  await page.getByLabel('Full name',{exact:true}).fill('UI Test Owner');
  await page.getByLabel('Phone number',{exact:true}).fill('+614'+String(Date.now()).slice(-8));
  await page.getByLabel('Email address',{exact:true}).fill('ui'+Date.now()+'@example.com');
- await page.getByLabel('Password (at least 12 characters)',{exact:true}).fill('test-only-secure-password');
+ await page.getByLabel('Password (at least 6 characters)',{exact:true}).fill('test-only-secure-password');
  await page.getByRole('button',{name:'Create account',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Your money, clear.'})).toBeVisible();
 }

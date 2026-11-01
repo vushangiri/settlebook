@@ -70,8 +70,8 @@ def email(value):
 
 
 def password(value):
-    if not 12 <= len(value) <= 200:
-        raise ValueError("Use a password containing 12–200 characters.")
+    if not 6 <= len(value) <= 200:
+        raise ValueError("Use a password containing 6–200 characters.")
     return generate_password_hash(value)
 
 

@@ -1,7 +1,7 @@
 services:
   app:
     environment:
-      COOKIE_SECURE: 'true'
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
     logging:
       driver: json-file
       options: {max-size: 10m, max-file: '3'}
