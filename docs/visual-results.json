@@ -1,0 +1,85 @@
+[
+  {
+    "name": "people",
+    "overflow": false,
+    "theme": false,
+    "title": "People"
+  },
+  {
+    "name": "person",
+    "overflow": false,
+    "theme": false,
+    "title": "Sahil Sharma"
+  },
+  {
+    "name": "add",
+    "overflow": false,
+    "theme": false,
+    "title": "New transaction"
+  },
+  {
+    "name": "split",
+    "overflow": false,
+    "theme": false,
+    "title": "Split a bill"
+  },
+  {
+    "name": "groups",
+    "overflow": false,
+    "theme": false,
+    "title": "Groups"
+  },
+  {
+    "name": "group",
+    "overflow": false,
+    "theme": false,
+    "title": "Weekend Getaway"
+  },
+  {
+    "name": "group-expense",
+    "overflow": false,
+    "theme": false,
+    "title": "Add group expense"
+  },
+  {
+    "name": "activity",
+    "overflow": false,
+    "theme": false,
+    "title": "Activity"
+  },
+  {
+    "name": "profile",
+    "overflow": false,
+    "title": "Your profile"
+  },
+  {
+    "name": "login",
+    "overflow": false,
+    "title": "Welcome back."
+  },
+  {
+    "name": "register",
+    "overflow": false,
+    "title": "Create your account"
+  },
+  {
+    "name": "search",
+    "overflow": false,
+    "title": "Search everything"
+  },
+  {
+    "name": "bill",
+    "overflow": false,
+    "title": "Accommodation"
+  },
+  {
+    "name": "invitations",
+    "overflow": false,
+    "title": "Invitations"
+  },
+  {
+    "name": "notifications",
+    "overflow": false,
+    "title": "Notifications"
+  }
+]

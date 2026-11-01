@@ -1,0 +1,1113 @@
+SETTLEBOOK — COMPLETE APPLICATION DEVELOPMENT MASTER PROMPT
+ROLE AND RESPONSIBILITY
+You are the Principal Software Engineer, Full-Stack Developer, Database Architect, UI/UX Engineer, Security Engineer, QA Engineer, and DevOps Engineer responsible for building Settlebook, a mobile-first personal debt management, bill-splitting, and group expense settlement application.
+
+Your assignment is to independently design, implement, execute, test, audit, repair, and deliver the complete working application.
+
+The interactive Settlebook UI developed earlier in this ChatGPT conversation is the authoritative visual reference.
+
+Reproduce its appearance and interactions as faithfully as possible, including its typography, colors, spacing, cards, navigation, animations, light/dark themes, and mobile-first layout.
+
+Do not replace it with a generic dashboard or a different design system.
+
+The final deliverable must be a working application, not a prototype, mockup, scaffolding project, or collection of partially implemented modules.
+
+Make sensible engineering decisions autonomously. Ask for clarification only when an ambiguity materially affects financial correctness, security, or essential product behavior.
+
+Do not declare any feature complete unless it has been implemented and tested.
+
+
+1. PRODUCT OVERVIEW
+Settlebook is a lightweight mobile-first web application and installable Progressive Web App (PWA) designed to help users manage money owed between people.
+
+The application has three primary financial workflows:
+
+Individual Ledger: Track money given, money taken, outstanding balances, repayments, and transaction history between two people.
+Split Bills: Divide an expense among multiple participants, either equally or using custom amounts, and create the corresponding financial obligations.
+Groups: Maintain a temporary, isolated ledger containing multiple expenses and participants. Calculate net obligations and transfer them into the individual/shared ledger system only when the group is finalized.
+These three workflows must work together without double counting, incorrect balances, duplicate records, or inconsistent synchronization.
+
+The application must be simple enough for everyday use, but its financial accounting must be reliable.
+
+All monetary calculations must be performed using integer minor units (cents), never binary floating-point arithmetic.
+
+The default currency is AUD. Design the database so additional currencies can be supported later, but do not introduce currency conversion into the MVP.
+
+
+2. TECHNOLOGY STACK
+Use the smallest practical technology stack that fully satisfies the requirements.
+
+Backend
+Python 3.12+
+Flask
+SQLAlchemy 2.x
+Alembic via Flask-Migrate
+PostgreSQL
+Flask-Login or equivalent secure session-based authentication
+Werkzeug password hashing
+Gunicorn
+Frontend
+Server-rendered Jinja2 templates
+Tailwind CSS, compiled into local static assets
+HTMX for partial page updates
+Alpine.js for lightweight client-side interactions
+Vanilla JavaScript only where necessary
+CSS transitions and animations
+Responsive mobile-first layouts
+Avoid React, Next.js, Vue, Angular, or other frontend frameworks requiring a separate application unless an essential requirement demonstrably cannot be met using the proposed stack.
+
+PWA
+Web App Manifest
+Service Worker
+Installable on Android and iOS
+Responsive standalone display
+App icons and splash-screen-compatible assets
+Offline application shell
+Clear offline/online status
+No false success indication for transactions submitted while offline
+Infrastructure
+PostgreSQL as the single authoritative database
+Docker Compose
+Nginx reverse proxy
+Gunicorn
+HTTPS in production
+Local filesystem storage for attachments, using a persistent Docker volume
+Pytest for automated tests
+Ruff for linting
+GitHub Actions for CI
+Do not introduce Redis, Celery, Kafka, Kubernetes, Elasticsearch, Typesense, or microservices without a documented, essential reason.
+
+Use PostgreSQL and a simple application architecture wherever possible.
+
+Real-Time Synchronization
+Implement reliable cross-device synchronization.
+
+Prefer a lightweight strategy such as authenticated incremental polling with revision numbers or Server-Sent Events.
+
+WebSockets are optional, not mandatory.
+
+Synchronization must preserve correctness even if users have intermittent connectivity or multiple devices.
+
+Use PostgreSQL transactions, unique constraints, and idempotency keys to prevent duplicate financial operations.
+
+
+3. VISUAL DESIGN — STRICT REQUIREMENT
+The previously approved interactive Settlebook prototype is the visual source of truth.
+
+Reproduce its visual identity accurately.
+
+Light Theme
+Soft off-white application background
+White cards and surfaces
+Deep navy headings and primary text
+Clearly visible dark contact names and transaction descriptions
+Muted but readable secondary text
+Purple primary accent
+Green positive balances
+Red negative balances
+Subtle borders and shadows
+Rounded cards and controls
+Dark Theme
+Deep charcoal/navy background
+Slightly lighter dark cards
+Bright, high-contrast headings
+Readable secondary text
+Soft lavender accents
+Appropriately adjusted green/red balance indicators
+Consistent dark styling across every component
+Theme Switching
+Visible sun/moon toggle in the application header
+Instant switching without reloading
+Persist user preference
+Respect system theme when no preference is saved
+Prevent incorrect-theme flashes during page loading
+Layout
+Mobile-first interface
+Fixed bottom navigation
+Compact top application header
+Rounded balance cards
+Contact avatars or initials
+Clear financial indicators
+Clean forms and transaction history
+Smooth screen transitions
+Touch-friendly buttons
+Appropriate safe-area handling on iPhones
+Proper keyboard behavior on mobile devices
+Navigation must include:
+
+Home | People | Add | Groups | Activity
+
+Profile/settings must remain accessible from the header.
+
+Use smooth, subtle animations while respecting prefers-reduced-motion.
+
+All text must meet WCAG AA contrast requirements where applicable.
+
+Do not sacrifice usability for visual effects.
+
+
+4. AUTHENTICATION AND USER ACCOUNTS
+Users must be able to register using:
+
+Full name
+Phone number
+Email address
+Password
+Optional profile picture
+Requirements:
+
+Phone number is the primary unique account identifier.
+Normalize phone numbers to E.164 format.
+Email must also be unique when provided.
+Secure password hashing.
+Session-based login/logout.
+Password change.
+Password reset using a secure, expiring token.
+Profile editing.
+Profile image upload.
+CSRF protection.
+Secure cookies.
+Rate limiting for authentication attempts.
+Account deactivation.
+Proper authorization checks on every protected operation.
+Do not invent or silently assume phone ownership verification.
+
+For the MVP, phone verification may be manually administered or deferred, but unverified phone numbers must never be treated as proof of identity for automatically exposing another user's financial records.
+
+Document how SMS verification can be introduced later.
+
+
+5. CONTACTS AND AUTOMATIC ACCOUNT LINKING
+Users can create contacts containing:
+
+Full name
+Phone number (optional)
+Email (optional)
+Optional profile image
+Notes (optional)
+Contacts may or may not be registered users.
+
+Registered Contacts
+When a contact's phone number matches an existing verified registered user, the system should support linking them to the same financial relationship.
+
+Linking must be secure.
+
+Do not expose private financial information simply because someone entered another person's phone number.
+
+Use an invitation, acceptance, or equivalent secure verification mechanism where required.
+
+Once linked:
+
+Both users can access the same shared financial relationship.
+Transactions synchronize between devices.
+Balances appear from each user's perspective.
+Updates and repayments become visible to both parties.
+Both users can inspect transaction history.
+Notifications appear for relevant changes.
+Example:
+
+User A records giving User B $100.
+
+User A sees:
+
+Sahil owes you $100.
+
+User B sees:
+
+You owe Bhushan $100.
+
+These are two perspectives of one financial obligation, not two independently maintained transactions.
+
+Unregistered Contacts
+Users can add unregistered people.
+Transactions can be recorded against these contacts.
+The creator controls these local records.
+A phone number is not mandatory.
+If the person later registers and verifies ownership of the matching number, support a secure claim/linking process.
+Existing private records must not automatically become visible without appropriate authorization.
+Avoid duplicate financial records when contacts are linked.
+
+
+6. INDIVIDUAL LEDGER
+Each relationship must maintain a complete financial history.
+
+Supported transaction types:
+
+Money given
+Money taken
+Repayment received
+Repayment made
+Group settlement obligation
+Split bill obligation
+Adjustment/correction
+Reversal
+Transaction fields:
+
+Unique ID
+Relationship ID
+Initiating user
+Counterparty
+Amount
+Currency
+Transaction type
+Description
+Optional attachment
+Created timestamp
+Effective transaction date
+Source type
+Source reference
+Idempotency key
+Audit metadata
+Accounting Rules
+From User A's perspective:
+
+Money given to B increases the amount B owes A.
+Money taken from B increases the amount A owes B.
+Repayment received from B reduces B's outstanding debt.
+Repayment made to B reduces A's outstanding debt.
+Balances must be derived from financial ledger entries.
+
+Do not store independently editable balance totals as the source of truth.
+
+Cached balances are permitted if they can be reliably rebuilt and reconciled.
+
+Immutability
+Posted financial transactions must be immutable.
+
+Users must not be able to silently edit or delete historical financial entries.
+
+Mistakes must be corrected through compensating transactions or reversals with audit references.
+
+All financial history must remain traceable.
+
+Disputes
+For synchronized relationships, support:
+
+Transaction acknowledgment
+Transaction dispute
+Dispute notes
+Dispute resolution status
+A disputed transaction must not silently disappear from the ledger.
+
+
+7. REPAYMENTS
+Users must be able to record partial or full repayments.
+
+Examples:
+
+A owes B $100.
+
+A pays B $30.
+
+Outstanding debt becomes $70.
+
+Repayments must be stored as separate financial events.
+
+Requirements:
+
+Partial repayments
+Full repayments
+Payment date
+Optional note
+Optional attachment
+Remaining balance calculation
+Transaction references
+Duplicate submission protection
+Do not confuse recording an obligation with recording a completed payment.
+
+
+8. SPLIT BILLS
+Users can create a bill involving multiple participants.
+
+Bill fields:
+
+Description
+Total amount
+Currency
+Payer
+Participants
+Split method
+Optional attachment
+Date
+Notes
+Equal Split
+Divide the total equally among selected participants.
+
+Use integer cents and deterministic remainder allocation.
+
+Example:
+
+$100 divided among three people must produce:
+
+$33.34 + $33.33 + $33.33 = $100.00
+
+Never lose or create money through rounding.
+
+Custom Split
+Allow manual share allocation.
+
+The sum of participant shares must equal the bill total.
+
+Reject invalid totals.
+
+Payer Handling
+The payer may be:
+
+The current user
+Another registered user
+An unregistered contact
+Support obligations between any participating pair.
+
+Do not incorrectly attribute third-party debts to the current user.
+
+For example:
+
+Sahil pays $90 for Sahil, Priya, and Bhushan.
+
+Each person's share is $30.
+
+The system must correctly create:
+
+Bhushan owes Sahil $30.
+Priya owes Sahil $30.
+Sahil owes himself nothing.
+
+Posting
+Split bills outside groups create financial obligations in the appropriate individual/shared ledgers.
+
+The bill and its resulting obligations must remain linked.
+
+Posting must be atomic and idempotent.
+
+
+9. GROUPS — CORE SPECIAL FEATURE
+Groups are temporary, isolated financial ledgers.
+
+This feature is central to the product and must not be simplified into ordinary split bills.
+
+Group Creation
+A user can create a group containing:
+
+Group name
+Description (optional)
+Creator
+Members
+Creation date
+Status
+Supported statuses:
+
+Draft/Open
+Under Review
+Finalized
+Archived
+The creator acts as group administrator.
+
+Group Members
+Add registered users.
+Add unregistered contacts.
+Invite members.
+View membership.
+Track participation.
+Restrict unauthorized access.
+Group members must be able to review relevant expenses and settlement calculations.
+
+Group Expenses
+A group can contain unlimited expenses subject to reasonable application limits.
+
+Each expense has:
+
+Description
+Amount
+Currency
+Payer
+Participants
+Equal/custom shares
+Optional attachment
+Date
+Notes
+Creator
+Audit metadata
+Different members can pay for different expenses.
+
+A group expense can be split among all members or a selected subset.
+
+Critical Isolation Rule
+No group expense may modify an individual ledger while the group remains open.
+
+Group balances must be calculated independently.
+
+Example:
+
+A group has four members.
+
+Sahil pays $200 for accommodation.
+Bhushan pays $80 for food.
+Priya pays $60 for transport.
+Alex pays $40 for groceries.
+The group calculates each member's contribution and obligation.
+
+Individual ledgers remain unchanged until finalization.
+
+Settlement Calculation
+Calculate:
+
+Total group spending
+Amount paid by each member
+Amount owed by each member
+Net creditor/debtor position
+Recommended settlement transfers
+Use a deterministic debt simplification algorithm.
+
+The algorithm should reduce unnecessary transfers without changing the total amount owed.
+
+Do not falsely claim mathematical minimum-transfer optimality if the implemented algorithm only provides a practical reduction.
+
+Group Review
+Before finalization:
+
+Show every expense.
+Show each participant's share.
+Show the settlement preview.
+Allow members to acknowledge or dispute entries.
+Display unresolved disputes.
+Allow the creator to correct expenses while preserving audit history.
+Group Finalization
+Only the creator or an explicitly authorized administrator can finalize the group.
+
+Before finalization:
+
+Validate expense totals.
+Validate membership.
+Validate all share allocations.
+Recalculate settlement.
+Check unresolved disputes.
+Present a final confirmation.
+Record a finalized snapshot.
+Upon finalization:
+
+Freeze the group.
+Calculate the final net obligations.
+Generate corresponding individual/shared ledger obligations.
+Link those obligations to the group.
+Commit the operation atomically.
+Mark the group finalized.
+Notify affected users.
+Do not create duplicate obligations if the finalization request is retried.
+
+A finalized group must not be silently modified.
+
+Any subsequent corrections require an explicit audited adjustment workflow.
+
+Settlement Semantics
+Finalizing a group means the obligations have been transferred to the individual/shared ledger system.
+
+It does not mean that money has physically changed hands.
+
+Users can later record repayments through their individual ledgers.
+
+The system must correctly support obligations between all members, including pairs that do not involve the group creator.
+
+
+10. HOME DASHBOARD
+Reproduce the approved dashboard.
+
+Display:
+
+Greeting/date
+Net balance
+Total amount owed to the user
+Total amount the user owes
+Quick actions
+People summary
+Recent transactions
+Quick actions:
+
+New entry
+Split bill
+New group
+Individual balances must not include open-group obligations.
+
+Only finalized group obligations should affect individual balances.
+
+Use the approved purple gradient summary card.
+
+
+11. PEOPLE SCREEN
+Display:
+
+Search
+Contact list
+Contact avatars/initials
+Registration/link status
+Individual balances
+Add contact action
+Selecting a person opens their ledger.
+
+Person Detail
+Display:
+
+Name
+Contact information
+Connection status
+Current balance
+New entry action
+Repayment action
+Transaction history
+Attachments
+Related split bills
+Related finalized group obligations
+Use clear visual differentiation between money owed to the user and money owed by the user.
+
+
+12. ACTIVITY SCREEN
+Provide a chronological activity feed.
+
+Support:
+
+All transactions
+Money given
+Money taken
+Repayments
+Split bills
+Finalized group obligations
+Corrections/reversals
+Filtering:
+
+Person
+Transaction type
+Date range
+Amount range
+Source
+Search text
+Allow users to open individual records for details.
+
+
+13. SEARCH
+Implement application-wide search using PostgreSQL.
+
+Search across:
+
+Contacts
+Transactions
+Transaction descriptions
+Groups
+Group expenses
+Split bills
+Use appropriate database indexes.
+
+Do not introduce a dedicated search engine.
+
+The interface should remain responsive with realistic amounts of data.
+
+
+14. ATTACHMENTS
+Support optional attachments for:
+
+Transactions
+Repayments
+Split bills
+Group expenses
+Supported types:
+
+JPEG
+PNG
+WebP
+PDF
+Requirements:
+
+Secure upload validation
+Maximum file size
+Randomized stored filenames
+Access control
+Download/view support
+Image preview
+Persistent storage
+Prevention of path traversal
+Prevention of unauthorized attachment access
+Attachments must not be publicly accessible through guessable static URLs.
+
+
+15. NOTIFICATIONS
+Implement in-app notifications for:
+
+Shared transaction creation
+New split bill obligations
+Repayments
+Group invitations
+Group expenses
+Group review requests
+Group finalization
+Disputes
+Corrections
+Support unread counts and read/unread state.
+
+Browser push notifications may be implemented if practical without introducing substantial infrastructure.
+
+Do not require third-party paid notification services for the core application.
+
+
+16. PWA REQUIREMENTS
+The application must behave like a native-feeling mobile app.
+
+Implement:
+
+Installable PWA
+App manifest
+Service worker
+Appropriate icons
+Standalone display
+iOS safe-area support
+Android installation support
+Touch-friendly controls
+Responsive keyboard handling
+Offline application shell
+Network status indicator
+Fast navigation
+Theme persistence
+Do not cache sensitive financial data indiscriminately.
+
+For the initial release, allow offline viewing only where secure and explicitly supported.
+
+Financial mutations must require confirmed server persistence.
+
+If offline transaction creation is not implemented, clearly disable submission and explain the offline state.
+
+Do not display success messages before server confirmation.
+
+
+17. DATABASE ARCHITECTURE
+Design a normalized PostgreSQL schema.
+
+At minimum, account for:
+
+Users
+User profiles
+Contacts
+Contact/account links
+Invitations
+Financial relationships
+Ledger entries
+Transaction attachments
+Split bills
+Split bill participants
+Split bill obligations
+Groups
+Group memberships
+Group expenses
+Group expense shares
+Group reviews/disputes
+Group settlement snapshots
+Settlement transfers
+Notifications
+Audit events
+Idempotency keys
+User preferences
+Use appropriate:
+
+Primary keys
+Foreign keys
+Unique constraints
+Check constraints
+Indexes
+Transaction boundaries
+Referential integrity
+Timestamp fields
+Use UUID identifiers where appropriate.
+
+All timestamps must be timezone-aware and stored in UTC.
+
+Use integer cents for monetary values.
+
+Avoid destructive cascade deletion of financial records.
+
+Ensure that the schema can support a future API without requiring a complete redesign.
+
+
+18. APPLICATION ARCHITECTURE
+Build a maintainable Flask modular monolith.
+
+Suggested organization:
+
+Authentication
+Users and profiles
+Contacts
+Relationships
+Ledger
+Split bills
+Groups
+Settlements
+Attachments
+Notifications
+Search
+Settings
+PWA
+Separate:
+
+HTTP routes
+Validation
+Business logic
+Database models
+Templates
+Static assets
+Background maintenance commands
+Tests
+Do not put complex financial calculations directly inside route handlers.
+
+Use dedicated service functions for financial posting and group settlement.
+
+Document service responsibilities and important invariants.
+
+
+19. SECURITY
+Implement production-appropriate security controls.
+
+At minimum:
+
+Password hashing
+Secure session management
+CSRF protection
+Authorization on every sensitive operation
+Input validation
+Safe HTML escaping
+Secure attachment handling
+Rate limiting
+Session invalidation
+HTTPS configuration
+Secure cookies
+Environment-based secrets
+Protection against IDOR
+Protection against duplicate submissions
+Audit trails
+Database integrity constraints
+Never expose another user's financial records merely because an identifier is known.
+
+Test authorization using multiple independent users.
+
+
+20. TESTING — MANDATORY
+Implement and execute automated tests.
+
+Do not simply write tests without running them.
+
+Unit Tests
+Test:
+
+Balance calculations
+Money given/taken
+Partial repayments
+Full repayments
+Split calculations
+Rounding
+Group net balances
+Settlement algorithms
+Reversals
+Validation
+Integration Tests
+Test:
+
+Registration
+Login/logout
+Contact creation
+Contact linking
+Shared ledgers
+Transactions
+Split bills
+Groups
+Group finalization
+Notifications
+Attachments
+Search
+Financial Integrity Tests
+Explicitly verify:
+
+Both users see opposite perspectives of the same obligation.
+Open-group expenses do not affect individual balances.
+Finalized groups create the correct obligations.
+Finalizing a group twice does not duplicate obligations.
+Partial repayments calculate correctly.
+Custom split shares equal the total.
+Rounding preserves the original total.
+Transactions remain immutable.
+Corrections preserve audit history.
+Simultaneous requests do not corrupt balances.
+Third-party split obligations are attributed correctly.
+Repeated HTTP requests are idempotent.
+Failed database operations roll back atomically.
+UI Tests
+Use Playwright or an equivalent browser-testing tool.
+
+Test:
+
+Mobile navigation
+Light/dark mode
+Form validation
+Contact creation
+Individual transactions
+Split bills
+Group expense creation
+Group finalization
+Search
+PWA installation requirements
+Mobile viewport behavior
+Capture screenshots of all major screens in both themes.
+
+Compare them against the approved design.
+
+Check that text remains readable, layouts do not overflow, and controls are accessible.
+
+
+21. PERFORMANCE
+Optimize for everyday mobile use.
+
+Targets:
+
+Fast initial rendering
+Minimal JavaScript
+Efficient database queries
+Indexed searches
+Paginated transaction history
+Optimized images
+No unnecessary frontend dependencies
+No N+1 database queries in primary screens
+Measure representative performance rather than making unsupported claims.
+
+
+22. DEPLOYMENT
+Provide a complete Docker Compose deployment.
+
+Include:
+
+Flask application
+PostgreSQL
+Nginx
+Persistent database volume
+Persistent attachment volume
+Environment configuration
+Health checks
+Database migrations
+Production startup commands
+Provide separate development and production configurations where necessary.
+
+Support deployment on a small Ubuntu VPS.
+
+Include:
+
+HTTPS setup instructions
+Database backup procedure
+Database restore procedure
+Log inspection
+Upgrade procedure
+Rollback guidance
+Never hardcode production credentials.
+
+
+23. DOCUMENTATION
+Create comprehensive but concise documentation.
+
+Required files:
+
+README.md
+ARCHITECTURE.md
+DATABASE.md
+FINANCIAL_RULES.md
+FEATURES.md
+SECURITY.md
+TESTING.md
+DEPLOYMENT.md
+DEVELOPMENT.md
+Document:
+
+What the application does
+How it is structured
+How each module works
+How the ledger is calculated
+How group settlement works
+How to run locally
+How to deploy
+How to test
+How to create database migrations
+How to add new features
+How to troubleshoot common problems
+Include an .env.example and clear setup commands.
+
+
+24. IMPLEMENTATION WORKFLOW
+Work autonomously through these phases.
+
+Phase 1 — Architecture
+Review all requirements.
+
+Produce:
+
+Architecture overview
+Database schema
+Financial invariants
+Module boundaries
+Route map
+Implementation plan
+Identify contradictions or unresolved financial rules before coding.
+
+Phase 2 — Foundation
+Implement:
+
+Project structure
+Database configuration
+Authentication
+User profiles
+Migrations
+Base templates
+Design tokens
+PWA foundation
+Phase 3 — Individual Ledgers
+Implement:
+
+Contacts
+Shared relationships
+Transactions
+Repayments
+Attachments
+Balance calculations
+Transaction history
+Phase 4 — Split Bills
+Implement:
+
+Equal splits
+Custom splits
+Multiple payers where supported
+Third-party obligations
+Posting to ledgers
+Validation
+Phase 5 — Groups
+Implement:
+
+Group creation
+Membership
+Group expenses
+Isolated balances
+Settlement preview
+Review/disputes
+Finalization
+Ledger posting
+Finalized history
+Phase 6 — Interface
+Implement the approved Settlebook design.
+
+Include:
+
+Home
+People
+Person detail
+New transaction
+Split bill
+Groups
+Group detail
+Add group expense
+Activity
+Profile
+Registration/login
+Complete both light and dark themes.
+
+Phase 7 — Integration
+Connect all frontend interactions to actual backend functionality.
+
+Remove placeholder handlers, fake success messages, and demo-only calculations.
+
+Phase 8 — Testing and Audit
+Execute all tests.
+
+Repair failures.
+
+Repeat tests after repairs.
+
+Audit financial calculations, authorization, concurrency, and synchronization.
+
+Phase 9 — Deployment and Documentation
+Prepare the production deployment.
+
+Validate startup, migrations, persistent storage, and health checks.
+
+Complete documentation.
+
+
+25. FINAL AUDIT
+Before declaring completion, perform at least three distinct audit passes.
+
+Audit 1 — Functional Completeness
+Compare every original requirement against the implemented application.
+
+Identify missing or partially implemented functionality.
+
+Audit 2 — Financial and Security Integrity
+Recheck:
+
+Ledger correctness
+Group isolation
+Settlement posting
+Double counting
+Race conditions
+Idempotency
+Access control
+Contact linking
+Transaction immutability
+Audit 3 — UI, Performance, and Deployment
+Verify:
+
+Visual consistency with approved design
+Light/dark themes
+Mobile responsiveness
+PWA behavior
+Navigation
+Animations
+Database performance
+Docker deployment
+Documentation accuracy
+Fix all critical and high-severity issues before final delivery.
+
+
+26. DEFINITION OF DONE
+The project is complete only when:
+
+All requested features are implemented.
+Every main screen is functional.
+The approved UI has been reproduced.
+Light and dark modes work consistently.
+Users can register and log in.
+Contacts and shared ledgers work securely.
+Financial entries persist correctly.
+Split bills create correct obligations.
+Group expenses remain isolated.
+Group finalization posts correct obligations.
+Repayments update balances.
+Financial history is immutable and auditable.
+Search and attachments work.
+The PWA is installable.
+The application runs through Docker Compose.
+Automated tests have been executed successfully.
+Documentation is complete.
+No critical or high-severity defects remain.
+Do not claim completion based solely on successful compilation, server startup, or passing a small subset of tests.
+
+If any feature cannot be completed, explicitly identify it, explain the blocker, and mark it incomplete.
+
+
+27. FINAL DELIVERY
+Deliver:
+
+Complete source code.
+Working Docker Compose configuration.
+Database migrations.
+All frontend templates and assets.
+PWA files.
+Automated test suite.
+Test execution report.
+Documentation.
+Deployment instructions.
+Final requirement compliance report.
+Screenshots of major screens in both themes.
+Provide exact commands to start the application locally.
+
+Where the environment permits, run the application and verify it using a browser.
+
+If the project is connected to GitHub, use a dedicated development branch and create clear commits for meaningful implementation milestones.
+
+Final instruction: Build Settlebook as a complete, reliable, polished application. Keep the architecture minimal, but do not reduce or omit the required functionality. Prioritize financial correctness, security, and fidelity to the approved interface. Continue implementation and verification until the defined completion criteria are met or a genuine external blocker is encountered.

@@ -1,0 +1,11 @@
+services:
+  app:
+    environment:
+      COOKIE_SECURE: 'true'
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+  nginx:
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}

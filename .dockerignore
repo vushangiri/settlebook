@@ -1,0 +1,8 @@
+node_modules
+.git
+.env
+__pycache__
+.pytest_cache
+.ruff_cache
+test-results
+playwright-report

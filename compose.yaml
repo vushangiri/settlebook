@@ -1,0 +1,83 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-settlebook}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-settlebook}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  app:
+    build: .
+    environment: &appenv
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-settlebook}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-settlebook}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      UPLOAD_FOLDER: /data/uploads
+      TRUST_PROXY: 'true'
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-settlebook@example.com}
+      SMTP_TLS: ${SMTP_TLS:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - attachments:/data
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  migrate:
+    build: .
+    environment: *appenv
+    command: [flask, --app, settlebook:create_app, db, upgrade]
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: [tools]
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ['127.0.0.1:8080:80']
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+  test-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test-only
+      POSTGRES_DB: settlebook_test
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U test -d settlebook_test']
+      interval: 2s
+      retries: 30
+    profiles: [test]
+  tests:
+    build: .
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://test:test-only@test-db:5432/settlebook_test
+      SECRET_KEY: test-key-at-least-32-characters-long
+      COOKIE_SECURE: 'false'
+    command: [pytest, -v, -ra, --junitxml=/tmp/results.xml]
+    depends_on:
+      test-db:
+        condition: service_healthy
+    profiles: [test]
+volumes:
+  database:
+  attachments:

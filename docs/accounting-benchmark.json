@@ -1,0 +1,9 @@
+{
+  "expenses": 1000,
+  "members": 200,
+  "share_rows": 200000,
+  "seconds": 0.048530724999864105,
+  "scope": "Pure in-memory accounting only; excludes database, network and template rendering",
+  "balanced": true,
+  "transfers": 199
+}

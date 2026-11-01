@@ -1,0 +1,2 @@
+# Exact environment used for the verification report.
+-r requirements.lock

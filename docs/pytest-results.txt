@@ -1,0 +1,24 @@
+........................................................................ [ 49%]
+..............................................sssssssssssssssssss....... [ 99%]
+.                                                                        [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_postgres.py:98: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:122: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:141: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:175: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:198: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:219: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:231: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:243: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:265: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:284: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:297: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:314: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:333: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:359: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:387: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:410: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:427: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:440: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+SKIPPED [1] tests/test_postgres.py:455: BLOCKED: TEST_DATABASE_URL is not set; disposable PostgreSQL required.
+126 passed, 19 skipped in 0.53s
