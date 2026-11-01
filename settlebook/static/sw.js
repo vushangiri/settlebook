@@ -1,5 +1,5 @@
-const CACHE='settlebook-shell-v1';
-const ASSETS=['/static/offline.html','/static/design.css','/static/icon-192.png','/static/icon-512.png'];
+const CACHE='settlebook-shell-v2';
+const ASSETS=['/static/offline.html','/static/icon-192.png','/static/icon-512.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==location.origin)return;

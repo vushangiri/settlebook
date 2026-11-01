@@ -119,6 +119,17 @@ def test_manifest_assets(app):
     assert app.test_client().get("/sw.js").headers["Service-Worker-Allowed"] == "/"
 
 
+def test_versioned_assets_cache_but_auth_pages_do_not(app):
+    client = app.test_client()
+    version = app.config["ASSET_VERSION"]
+    page = client.get("/register")
+    assert f"/static/app.js?v={version}".encode() in page.data
+    assert page.headers["Cache-Control"] == "no-store"
+    asset = client.get(f"/static/app.js?v={version}")
+    assert asset.status_code == 200
+    assert asset.headers["Cache-Control"] == "public, max-age=31536000, immutable"
+
+
 def test_render_all_main_screens(tmp_path):
     from tools.render_fixtures import render
 

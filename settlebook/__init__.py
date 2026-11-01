@@ -38,6 +38,13 @@ def create_app(config=None):
     )
     if config:
         app.config.update(config)
+    app.config["ASSET_VERSION"] = str(
+        max(p.stat().st_mtime_ns for p in Path(app.static_folder).rglob("*") if p.is_file())
+    )
+
+    @app.context_processor
+    def asset_context():
+        return {"asset_version": app.config["ASSET_VERSION"]}
     if not app.config["SECRET_KEY"] or len(app.config["SECRET_KEY"]) < 32:
         raise RuntimeError("Set SECRET_KEY to at least 32 random characters.")
     if not app.config["SQLALCHEMY_DATABASE_URI"].startswith("postgresql"):
@@ -70,6 +77,8 @@ def create_app(config=None):
             response.headers["Strict-Transport-Security"] = "max-age=31536000"
         if not request.path.startswith("/static/"):
             response.headers["Cache-Control"] = "no-store"
+        elif request.args.get("v") == app.config["ASSET_VERSION"]:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
     @app.template_filter("cash")

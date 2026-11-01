@@ -49,3 +49,35 @@ test('PWA manifest, browser validation, and safe offline fallback',async({page,c
  const manifest=await (await page.request.get('/static/manifest.webmanifest')).json();expect(manifest.display).toBe('standalone');expect(manifest.icons).toHaveLength(2);
  await page.evaluate(()=>navigator.serviceWorker.ready);await page.reload();await context.setOffline(true);await page.reload();await expect(page.getByRole('heading',{name:"You're offline."})).toBeVisible();await capture(page,'offline');await context.setOffline(false);
 });
+
+test('navigation keeps the shell, shows loading feedback, and recovers from errors',async({page})=>{
+ await register(page);
+ await page.evaluate(()=>{window.navigationMarker='same-document'});
+ let release;
+ const waiting=new Promise(resolve=>{release=resolve});
+ await page.route('**/people',async route=>{
+  const response=await route.fetch();
+  await waiting;
+  await route.fulfill({response});
+ });
+ const navigation=page.getByRole('navigation',{name:'Main navigation'});
+ await navigation.getByRole('link',{name:'People',exact:true}).click();
+ await expect(page.locator('#navigation-loading')).toBeVisible();
+ await expect(page.locator('#screen')).toHaveAttribute('aria-busy','true');
+ await expect(navigation).toBeVisible();
+ release();
+ await expect(page.getByRole('heading',{name:'People',exact:true})).toBeVisible();
+ await expect(page).toHaveURL(/\/people$/);
+ await expect(navigation.getByRole('link',{name:'People',exact:true})).toHaveAttribute('aria-current','page');
+ await expect(page.locator('#navigation-loading')).toBeHidden();
+ expect(await page.evaluate(()=>window.navigationMarker)).toBe('same-document');
+ await page.route('**/groups',route=>route.fulfill({status:503,body:'Unavailable'}));
+ await navigation.getByRole('link',{name:'Groups',exact:true}).click();
+ await expect(page.locator('#network')).toContainText('tap the tab to retry');
+ await expect(page.locator('#navigation-loading')).toBeHidden();
+ await page.unroute('**/groups');
+ await navigation.getByRole('link',{name:'Groups',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Groups',exact:true})).toBeVisible();
+ await page.goBack();
+ await expect(page.getByRole('heading',{name:'People',exact:true})).toBeVisible();
+});
